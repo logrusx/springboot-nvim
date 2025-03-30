@@ -76,25 +76,62 @@ local function boot_run(args)
 	end
 end
 
+local function boot_stop()
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.bo[buf].buftype == "terminal" then
+			local job_id = vim.b[buf].terminal_job_id
+			if job_id and vim.fn.jobwait({ job_id }, 0)[1] == -1 then
+				-- Send SIGINT to gracefully stop the Gradle process
+				vim.fn.chansend(job_id, "\x03") -- Ctrl+C
+				vim.fn.chansend(job_id, "exit\n") -- Exit terminal
+				vim.cmd("bd! " .. buf) -- Close the terminal buffer
+				print("Stopped Spring Boot process")
+				return
+			end
+		end
+	end
+	print("No active terminal session found")
+end
+
+local function toggle_terminal()
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.bo[buf].buftype == "terminal" then
+			local job_id = vim.b[buf].terminal_job_id
+			if job_id and vim.fn.jobwait({ job_id }, 0)[1] == -1 then
+				local win_id = vim.fn.bufwinid(buf)
+				if win_id ~= -1 then
+					vim.cmd("hide") -- Hide the terminal window if visible
+					print("Terminal session hidden")
+				else
+					vim.cmd("split | buffer " .. buf) -- Reopen the terminal buffer
+					print("Terminal session restored")
+				end
+				return
+			end
+		end
+	end
+	print("No active terminal session found")
+end
+
 local function contains_package_info(file_path)
 	local file = io.open(file_path, "r")
 	if not file then
 		return false
 	end
 
-    local has_package_info = false
+	local has_package_info = false
 
-    local line
-    repeat
-        line = file:read("*l")
-        if line and string.match(line, "^package") then
-            has_package_info = true
-            break
-        end
-    until not line
+	local line
+	repeat
+		line = file:read("*l")
+		if line and string.match(line, "^package") then
+			has_package_info = true
+			break
+		end
+	until not line
 
-    file:close()
-    return has_package_info
+	file:close()
+	return has_package_info
 end
 
 local function get_java_package(file_path)
@@ -172,6 +209,8 @@ end
 return {
 	setup = setup,
 	boot_run = boot_run,
+	boot_stop = boot_stop,
+	toggle_terminal = toggle_terminal,
 	incremental_compile = incremental_compile,
 	fill_package_details = fill_package_details,
 	foo = foo,
