@@ -75,12 +75,11 @@ local function boot_run(args)
 			vim.cmd("buffer " .. term_buf)
 			vim.cmd("norm G")
 		end
-
 		-- Send commands to the terminal
 		local cd_cmd = ':call jobsend(b:terminal_job_id, "cd ' .. project_root .. '\\n")'
 		vim.cmd(cd_cmd)
 		local run_cmd = get_run_command(args or "")
-		vim.cmd(run_cmd)
+		vim.cmd(':call jobsend(b:terminal_job_id, "' .. run_cmd .. '\\n")')
 		vim.cmd("wincmd k")
 	else
 		print("Not in a Spring Boot project")
