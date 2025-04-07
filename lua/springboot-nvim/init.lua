@@ -77,40 +77,40 @@ local function boot_run(args)
 end
 
 local function boot_stop()
-	-- Find the buffer named "springboot-terminal"
-	local term_buf = vim.fn.bufnr("springboot-terminal")
-	if term_buf ~= -1 and vim.bo[term_buf].buftype == "terminal" then
-		local job_id = vim.b[term_buf].terminal_job_id
-		if job_id and vim.fn.jobwait({ job_id }, 0)[1] == -1 then
-			-- Send SIGINT to gracefully stop the Gradle process
-			vim.fn.chansend(job_id, "\x03") -- Ctrl+C
-			vim.fn.chansend(job_id, "exit\n") -- Exit terminal
-			vim.cmd("bd! " .. term_buf) -- Close the terminal buffer
-			print("Stopped Spring Boot process")
-			return
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.bo[buf].buftype == "terminal" then
+			local job_id = vim.b[buf].terminal_job_id
+			if job_id and vim.fn.jobwait({ job_id }, 0)[1] == -1 then
+				-- Send SIGINT to gracefully stop the Gradle process
+				vim.fn.chansend(job_id, "\x03") -- Ctrl+C
+				vim.fn.chansend(job_id, "exit\n") -- Exit terminal
+				vim.cmd("bd! " .. buf) -- Close the terminal buffer
+				print("Stopped Spring Boot process")
+				return
+			end
 		end
 	end
-	print("No active Spring Boot terminal session found")
+	print("No active terminal session found")
 end
 
 local function toggle_terminal()
-	-- Look specifically for the "springboot-terminal" buffer
-	local term_buf = vim.fn.bufnr("springboot-terminal")
-	if term_buf ~= -1 and vim.bo[term_buf].buftype == "terminal" then
-		local job_id = vim.b[term_buf].terminal_job_id
-		if job_id and vim.fn.jobwait({ job_id }, 0)[1] == -1 then
-			local win_id = vim.fn.bufwinid(term_buf)
-			if win_id ~= -1 then
-				vim.cmd("hide") -- Hide the terminal window if visible
-				print("Spring Boot terminal session hidden")
-			else
-				vim.cmd("split | buffer " .. term_buf) -- Reopen the terminal buffer
-				print("Spring Boot terminal session restored")
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.bo[buf].buftype == "terminal" then
+			local job_id = vim.b[buf].terminal_job_id
+			if job_id and vim.fn.jobwait({ job_id }, 0)[1] == -1 then
+				local win_id = vim.fn.bufwinid(buf)
+				if win_id ~= -1 then
+					vim.cmd("hide") -- Hide the terminal window if visible
+					print("Terminal session hidden")
+				else
+					vim.cmd("split | buffer " .. buf) -- Reopen the terminal buffer
+					print("Terminal session restored")
+				end
+				return
 			end
-			return
 		end
 	end
-	print("No active Spring Boot terminal session found")
+	print("No active terminal session found")
 end
 
 local function contains_package_info(file_path)
