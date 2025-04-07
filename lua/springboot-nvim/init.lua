@@ -63,23 +63,13 @@ local function boot_run(args)
 	local project_root = get_spring_boot_project_root()
 
 	if project_root then
-		-- Check if a terminal buffer already exists
-		local term_buf = vim.fn.bufnr("springboot-terminal")
-		if term_buf == -1 then
-			-- Create a new terminal buffer if it doesn't exist
-			vim.cmd("botright split | terminal")
-			vim.cmd("resize 15")
-			vim.cmd("file springboot-terminal") -- Name the buffer for reuse
-		else
-			-- Reuse the existing terminal buffer
-			vim.cmd("buffer " .. term_buf)
-			vim.cmd("norm G")
-		end
-		-- Send commands to the terminal
+		vim.cmd("split | terminal")
+		vim.cmd("resize 15")
+		vim.cmd("norm G")
 		local cd_cmd = ':call jobsend(b:terminal_job_id, "cd ' .. project_root .. '\\n")'
 		vim.cmd(cd_cmd)
 		local run_cmd = get_run_command(args or "")
-		vim.cmd(':call jobsend(b:terminal_job_id, "' .. run_cmd .. '\\n")')
+		vim.cmd(run_cmd)
 		vim.cmd("wincmd k")
 	else
 		print("Not in a Spring Boot project")
